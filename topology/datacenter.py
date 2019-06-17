@@ -1,8 +1,5 @@
 """
-Este archivo ejemplifica la creacion de una topologia de mininet
-En este caso estamos creando una topologia muy simple con la siguiente forma
-
-   host --- switch --- switch --- host
+Fattree Topology
 """
 
 from mininet.topo import Topo
@@ -15,7 +12,7 @@ class Datacenter( Topo ):
     for level in range(levels):
        level_switches = []
        for switch in range(2**level):
-         level_switches.append(self.addSwitch('sw1%d_%d'%(level,switch)))
+         level_switches.append(self.addSwitch('sw%d_%d'%(level,switch)))
        switches_by_level[level] = level_switches
     return switches_by_level
 
