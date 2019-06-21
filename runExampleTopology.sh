@@ -1,0 +1,1 @@
+docker-compose exec mininet mn --custom /tmp/topology/example.py --topo example  --mac --arp --switch ovsk --controller remote
