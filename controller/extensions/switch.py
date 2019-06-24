@@ -27,7 +27,7 @@ class SwitchController:
     log.info("Packet arrived to switch %s from %s to %s", self.dpid, packet.src, packet.dst)
     log.info("Packet is from type %s", packet.type)
 
-    next_hop = self.get_next_hop(packet, event)
+    next_hop = self.get_next_hop(packet)
 
     if not next_hop:
       self.search_for_minimum_path(event)
@@ -40,10 +40,10 @@ class SwitchController:
     self.forward(next_hop, event)
     log.info("---------------------FINISHED --------------------------")
 
-  def get_next_hop(self, packet, event):
-
+  def get_next_hop(self, packet):
     src = packet.src
     destination = packet.dst
+    return self.flow_table.get((src, destination), default = None)
 
   def search_for_minimum_path(self, event):
     destination = event.parse.dst
