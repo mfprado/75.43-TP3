@@ -60,19 +60,6 @@ class Controller:
       self.log_topology()
       self.ecmp_util.update(self.topology)
 
-      '''con = core.openflow.getConnection(event.dpid)
-      msg = of.ofp_flow_mod()
-      match = of.ofp_match()
-      msg.match.dl_type = 0x800
-      msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
-      con.send(msg)
-
-      msg = of.ofp_flow_mod()
-      msg.priority = 42
-      #msg.match.dl_type = 0x800
-      # msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
-      # con.send(msg)'''
-
   def ecmp_path(self, switch_origin, switch_destination):
     return self.ecmp_util.get_path(switch_origin, switch_destination)
 
@@ -95,23 +82,7 @@ class Controller:
         if dpid == switch.get_dpid():
             return switch
 
-      log.info("Exception: Switch not founded. Everything is broken")
-
-
-  '''def add_host_by_switch(self, macEntry):
-    switch = macEntry.dpid
-    port = macEntry.inport
-    mac_adress = macEntry.my_y_acaddr
-    if switch in self.hosts_bswitch:
-        self.hosts_by_switch[switch].add((mac_adress, port))
-    else:
-        self.hosts_by_switch[switch] = set()
-        self.hosts_by_switch[switch].add((mac_adress, port))
-
-    self.refresh_paths()
-
-  def refresh_paths(self):
-      pass'''
+      log.info("Exception: Switch not founded.")
 
 
 def launch():
@@ -120,5 +91,3 @@ def launch():
 
   # Registrando el Controller en pox.core para que sea ejecutado
   core.registerNew(Controller)
-  #pox.openflow.spanning_tree.launch()
-  #pox.forwarding.l2_learning.launch()

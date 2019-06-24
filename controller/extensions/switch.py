@@ -1,15 +1,18 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
+import pox.lib.packet.ethernet as ethernet
 
 log = core.getLogger()
 
 class SwitchController:
   def __init__(self, dpid, connection, controller):
+    self.controller = controller
     self.dpid = dpid
     self.connection = connection
+
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
-    self.controller = controller
+
     #Esta tabla es un diccionario cuya clave es una tupla (mac_origen, mac_destino) y el valor es el
     #puerto de salida.
     self.flow_table = {}
@@ -25,9 +28,10 @@ class SwitchController:
 
     log.info("---------------------PACKET ARRIVED--------------------------")
     log.info("Packet arrived to switch %s from %s to %s", self.dpid, packet.src, packet.dst)
-    log.info("Packet is from type %s", packet.type)
+    log.info("Packet is from type %s", ethernet.getNameForType(packet.type))
 
     next_hop = self.get_next_hop(packet)
+
 
     if not next_hop:
       self.search_for_minimum_path(event)
@@ -85,6 +89,15 @@ class SwitchController:
       msg.data = event.ofp.data
     msg.in_port = event.port
     self.connection.send(msg)
+
+  def drop(self, event):
+      """Tell the switch to drop the packet"""
+      if event.ofp.buffer_id is not None:  # No se dropea porque el paquete no esta en el Switch Buffer
+          msg = of.ofp_packet_out()
+          msg.buffer_id = event.ofp.buffer_id
+          event.ofp.buffer_id = None
+          msg.in_port = event.port
+          self.connection.send(msg)
 
   def write_on_table(self, tuple_macs, next_hop):
     self.flow_table[tuple_macs] = next_hop
