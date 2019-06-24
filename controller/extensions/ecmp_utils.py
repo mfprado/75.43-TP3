@@ -97,11 +97,12 @@ class ECMPUtil():
         self.ports = {(sw, edge[0]): edge[1] for sw, edges in topology.items() for edge in edges}
         self.links = {sw: set(map(lambda x: x[0], edges)) for sw, edges in topology.items()}
         links_reversed = {}
-        for k, v in self.links.items():
-            if v in links_reversed:
-                links_reversed[v] = {k}
-            else:
-                links_reversed[v].update([k])
+        for k, vertices in self.links.items():
+            for v in vertices:
+                if v in links_reversed:
+                    links_reversed[v] = {k}
+                else:
+                    links_reversed[v].update([k])
         self.use_counts = {(origin, end): 0 for origin in self.links.keys() for end in self.links[origin]}
         self.paths = {}
         for v1 in vertices:
