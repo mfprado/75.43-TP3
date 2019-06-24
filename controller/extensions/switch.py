@@ -112,6 +112,9 @@ class SwitchController:
   def write_on_table(self, tuple_macs, next_hop):
     self.flow_table[tuple_macs] = next_hop
 
+  def clean_table(self):
+    self.flow_table = {}
+
   def get_dpid(self):
     return self.dpid
 
