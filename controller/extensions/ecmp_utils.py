@@ -78,11 +78,19 @@ class ECMPUtil():
                         return list(reversed(path)) + [end]
 
     def get_path(self, start, end):
-        assert self.paths
+        if (start, end) not in self.paths:
+            path = ECMPUtil.bfs_path(start, end, self.links, self.use_counts)
+            if path:
+                self.paths[(start, end)] = path
+                # We update the use counts
+                for i in range(len(path)-1):
+                    self.use_counts[(path[i], path[i+1])] += 1
+            else:
+                return []
         path = self.paths[(start, end)]
         new_path = []
         for i in range(len(path)-1):
-            new_path.append((path[i],self.ports[(path[i], path[i+1])]))
+            new_path.append((path[i], self.ports[(path[i], path[i+1])]))
         return new_path+[end]
 
     def update(self, topology):
@@ -98,11 +106,3 @@ class ECMPUtil():
         self.links = {sw: set(map(lambda x: x[0], edges)) for sw, edges in topology.items()}
         self.use_counts = {(origin, end): 0 for origin in self.links.keys() for end in self.links[origin]}
         self.paths = {}
-        for v1 in vertices:
-            for v2 in vertices:
-                path = ECMPUtil.bfs_path(v1, v2, self.links, self.use_counts)
-                if path:
-                    self.paths[(v1, v2)] = path
-                    # We update the use counts
-                    for i in range(len(path)-1):
-                        self.use_counts[(path[i], path[i+1])] += 1
