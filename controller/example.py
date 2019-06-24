@@ -7,6 +7,7 @@ from extensions.switch import SwitchController
 import pox.openflow.libopenflow_01 as of
 from pox.lib.addresses import EthAddr, IPAddr
 from pox.host_tracker.host_tracker import host_tracker
+from extensions.ecmp_utils import ECMPUtil
 
 log = core.getLogger()
 
@@ -55,7 +56,7 @@ class Controller:
       log.info("Link has been discovered from %s,%s to %s,%s", dpid_to_str(link.dpid1), link.port1, dpid_to_str(link.dpid2), link.port2)
       log.info("The discovered link is the %dth link"%self.links_counter)
 
-      self.topology[link.dpid1].add((link.dpid2, link.port2))
+      self.topology[link.dpid1].add((link.dpid2, link.port1))
       self.log_topology()
       self.ecmp_util.update(self.topology)
 
@@ -83,8 +84,9 @@ class Controller:
 
   def write_on_tables(self, path, source_mac_address, destination_mac_address):
     for i in range(0, len(path) - 1):
+      print("path", path)
       dpid_switch = path[i][0]
-      next_hop = path[i+1][1]
+      next_hop = path[i][1]
       switch_controller = self.get_switch_by_dpid(dpid_switch)
       switch_controller.write_on_table((source_mac_address, destination_mac_address), next_hop)
 

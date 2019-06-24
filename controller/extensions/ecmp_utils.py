@@ -96,14 +96,6 @@ class ECMPUtil():
         vertices = list(set(vertices))
         self.ports = {(sw, edge[0]): edge[1] for sw, edges in topology.items() for edge in edges}
         self.links = {sw: set(map(lambda x: x[0], edges)) for sw, edges in topology.items()}
-        links_reversed = {}
-        for k, vertices in self.links.items():
-            for v in vertices:
-                if v in links_reversed:
-                    links_reversed[v] = {k}
-                else:
-                    links_reversed[v].update([k])
-        self.links.update(links_reversed)
         self.use_counts = {(origin, end): 0 for origin in self.links.keys() for end in self.links[origin]}
         self.paths = {}
         for v1 in vertices:
@@ -114,4 +106,3 @@ class ECMPUtil():
                     # We update the use counts
                     for i in range(len(path)-1):
                         self.use_counts[(path[i], path[i+1])] += 1
-                        self.use_counts[(path[i+1], path[i])] += 1
