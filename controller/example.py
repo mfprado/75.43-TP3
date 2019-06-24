@@ -8,6 +8,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.addresses import EthAddr, IPAddr
 from pox.host_tracker.host_tracker import host_tracker
 from extensions.ecmp_utils import ECMPUtil
+import datetime as dt
 
 
 log = core.getLogger()
@@ -57,20 +58,33 @@ class Controller:
       log.info("Link has been discovered from %s,%s to %s,%s", dpid_to_str(link.dpid1), link.port1, dpid_to_str(link.dpid2), link.port2)
       log.info("The discovered link is the %dth link"%self.links_counter)
 
-      if (link.dpid2, link.port1) in self.topology[link.dpid1]:
-          log.info("Ignoring link")
-          return
+      if event.added:
+          if (link.dpid2, link.port1) in self.topology[link.dpid1]:
+              log.info("Ignoring added link because is already in the topology")
+              return
+          else:
+              self.links_counter += 1
+              self.topology[link.dpid1].add((link.dpid2, link.port1))
 
-      self.links_counter += 1
-      self.topology[link.dpid1].add((link.dpid2, link.port1))
+      if event.removed:
+          if (link.dpid2, link.port1) not in self.topology[link.dpid1]:
+              log.info("Ignoring removed link because it doesnt belong to the topology")
+              return
+          else:
+              self.links_counter -= 1
+              self.topology[link.dpid1].remove((link.dpid2, link.port1))
+
+      self.clean_switches_table()
       self.log_topology()
       self.has_updated_ecmp = False
 
   def ecmp_path(self, switch_origin, switch_destination):
     if not self.has_updated_ecmp:
         log.info("Updating topology")
+        log.info(dt.datetime.now())
         self.has_updated_ecmp = True
         self.ecmp_util.update(self.topology)
+        log.info(dt.datetime.now())
     log.info("Asking path to go from %s to %s"%(switch_origin, switch_destination))
     return self.ecmp_util.get_path(switch_origin, switch_destination)
 
@@ -94,6 +108,10 @@ class Controller:
             return switch
 
       log.info("Exception: Switch not founded.")
+
+  def clean_switches_table(self):
+      for swicht in self.switches:
+          swicht.clean_table()
 
 def launch():
   # Inicializando el modulo openflow_discovery
