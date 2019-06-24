@@ -103,7 +103,11 @@ class ECMPUtil():
                     links_reversed[v] = {k}
                 else:
                     links_reversed[v].update([k])
-        self.links.update(links_reversed)
+        for k in links_reversed.keys():
+            if k in self.links:
+                self.links[k].update(links_reversed[k])
+            else:
+                self.links[k] = links_reversed[k]
         self.use_counts = {(origin, end): 0 for origin in self.links.keys() for end in self.links[origin]}
         self.paths = {}
         for v1 in vertices:
