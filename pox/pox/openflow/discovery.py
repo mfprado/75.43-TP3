@@ -315,11 +315,11 @@ class Discovery (EventMixin):
 
     expired = [link for link,timestamp in self.adjacency.iteritems()
                if timestamp + self._link_timeout < now]
-    if expired:
+    '''if expired:
       for link in expired:
         log.info('link timeout: %s', link)
 
-      self._delete_links(expired)
+      self._delete_links(expired)'''
 
   def _handle_openflow_PacketIn (self, event):
     """

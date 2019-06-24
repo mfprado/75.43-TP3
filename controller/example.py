@@ -9,6 +9,7 @@ from pox.lib.addresses import EthAddr, IPAddr
 from pox.host_tracker.host_tracker import host_tracker
 from extensions.ecmp_utils import ECMPUtil
 
+
 log = core.getLogger()
 
 class Controller:
@@ -20,6 +21,7 @@ class Controller:
     self.host_tracker = host_tracker()
     self.hosts_by_switch = {}
     self.ecmp_util = ECMPUtil()
+    self.has_updated_ecmp = False
 
     # Esperando que los modulos openflow y openflow_discovery esten listos
     core.call_when_ready(self.startup, ('openflow', 'openflow_discovery'))
@@ -52,15 +54,24 @@ class Controller:
       Esta funcion es llamada cada vez que openflow_discovery descubre un nuevo enlace
       """
       link = event.link
-      self.links_counter += 1
       log.info("Link has been discovered from %s,%s to %s,%s", dpid_to_str(link.dpid1), link.port1, dpid_to_str(link.dpid2), link.port2)
       log.info("The discovered link is the %dth link"%self.links_counter)
 
+      if (link.dpid2, link.port1) in self.topology[link.dpid1]:
+          log.info("Ignoring link")
+          return
+
+      self.links_counter += 1
       self.topology[link.dpid1].add((link.dpid2, link.port1))
       self.log_topology()
-      self.ecmp_util.update(self.topology)
+      self.has_updated_ecmp = False
 
   def ecmp_path(self, switch_origin, switch_destination):
+    if not self.has_updated_ecmp:
+        log.info("Updating topology")
+        self.has_updated_ecmp = True
+        self.ecmp_util.update(self.topology)
+    log.info("Asking path to go from %s to %s"%(switch_origin, switch_destination))
     return self.ecmp_util.get_path(switch_origin, switch_destination)
 
   def log_topology(self):
@@ -83,7 +94,6 @@ class Controller:
             return switch
 
       log.info("Exception: Switch not founded.")
-
 
 def launch():
   # Inicializando el modulo openflow_discovery
