@@ -83,7 +83,7 @@ class ECMPUtil():
         new_path = []
         for i in range(len(path)-1):
             new_path.append((path[i],self.ports[(path[i], path[i+1])]))
-        return new_path
+        return new_path+[end]
 
     def update(self, topology):
         """
