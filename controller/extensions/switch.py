@@ -4,7 +4,7 @@ import pox.lib.packet.ethernet as ethernet
 
 log = core.getLogger()
 
-LLDP_PACKET = 34525
+IPV6_PACKET = 'IPV6'
 
 class SwitchController:
   def __init__(self, dpid, connection, controller):
@@ -20,37 +20,39 @@ class SwitchController:
     self.flow_table = {}
 
   def _handle_PacketIn(self, event):
-    """
-    Esta funcion es llamada cada vez que el switch recibe un paquete
-    y no encuentra en su tabla una regla para rutearlo
-    """
-    if event.parsed.type == LLDP_PACKET:
-      log.info("LLDP Packet: Discarted")
-      return
+      """
+      Esta funcion es llamada cada vez que el switch recibe un paquete
+      y no encuentra en su tabla una regla para rutearlo
+      """
+      packet = event.parsed
 
-    self.controller.host_tracker._handle_openflow_PacketIn(event)
+      log.info("---------------------PACKET ARRIVED--------------------------")
+      log.info("Packet arrived to switch %s from %s to %s", self.dpid, packet.src, packet.dst)
+      log.info("PacketPacket is from type %s", ethernet.getNameForType(packet.type))
 
-    packet = event.parsed
+      self.controller.host_tracker._handle_openflow_PacketIn(event)
+      log.info("Packet sent to host tracker")
 
-    log.info("---------------------PACKET ARRIVED--------------------------")
-    log.info("Packet arrived to switch %s from %s to %s", self.dpid, packet.src, packet.dst)
-    log.info("Packet is from type %s", ethernet.getNameForType(packet.type))
-
-    next_hop = self.get_next_hop(packet)
+      if ethernet.getNameForType(packet.type) == IPV6_PACKET:
+          self.drop(event)
+          return
 
 
-    if not next_hop:
-      self.search_for_minimum_path(event)
-      # En caso de que no haya next_hop, en search_for_minimum_path se escribe en la tabla del switch.
       next_hop = self.get_next_hop(packet)
-      log.info("Founded next hop: %s" % next_hop)
+
+
       if not next_hop:
-        return
+          self.search_for_minimum_path(event)
+          # En caso de que no haya next_hop, en search_for_minimum_path se escribe en la tabla del switch.
+          next_hop = self.get_next_hop(packet)
+          log.info("Founded next hop: %s" % next_hop)
+          if not next_hop:
+              return
 
-    log.info("Founded entry in switch table.")
+      log.info("Founded entry in switch table.")
 
-    self.forward(next_hop, event)
-    log.info("---------------------FINISHED --------------------------")
+      self.forward(next_hop, event)
+      log.info("---------------------FINISHED --------------------------")
 
   def get_next_hop(self, packet):
     log.info(self.flow_table)
