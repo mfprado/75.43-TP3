@@ -72,6 +72,16 @@ class SwitchController:
     msg.in_port = event.port
     self.connection.send(msg)
 
+  def forward(self, port, event):
+    msg = of.ofp_packet_out()
+    msg.actions.append(of.ofp_action_output(port=port))
+    if event.ofp.buffer_id is not None:
+      msg.buffer_id = event.ofp.buffer_id
+    else:
+      msg.data = event.ofp.data
+    msg.in_port = event.port
+    self.connection.send(msg)
+
   def write_on_table(self, tuple_macs, next_hop):
     pass
   def get_dpid(self):
