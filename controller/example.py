@@ -4,6 +4,9 @@ import pox.openflow.spanning_tree
 import pox.forwarding.l2_learning
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
+import pox.openflow.libopenflow_01 as of
+from pox.lib.addresses import EthAddr, IPAddr
+from pox.host_tracker.host_tracker import host_tracker
 
 log = core.getLogger()
 
@@ -13,6 +16,9 @@ class Controller:
     self.switches = []
     self.topology = {}
     self.links_counter = 0
+    self.host_tracker = host_tracker()
+    self.hosts_by_switch = {}
+    self.ecmp_util = ECMPUtil()
 
     # Esperando que los modulos openflow y openflow_discovery esten listos
     core.call_when_ready(self.startup, ('openflow', 'openflow_discovery'))
@@ -35,9 +41,10 @@ class Controller:
     log.info("Switch %s has come up.", dpid_to_str(event.dpid))
     if (event.connection not in self.connections):
       self.connections.add(event.connection)
-      sw = SwitchController(event.dpid, event.connection)
-      self.switches.append(sw)
       self.topology[event.dpid] = set()
+
+      sw = SwitchController(event.dpid, event.connection, self)
+      self.switches.append(sw)
 
   def _handle_LinkEvent(self, event):
       """
@@ -48,13 +55,62 @@ class Controller:
       log.info("Link has been discovered from %s,%s to %s,%s", dpid_to_str(link.dpid1), link.port1, dpid_to_str(link.dpid2), link.port2)
       log.info("The discovered link is the %dth link"%self.links_counter)
 
-      self.topology[link.dpid1].add(link.dpid2)
+      self.topology[link.dpid1].add((link.dpid2, link.port2))
       self.log_topology()
+      self.ecmp_util.update(self.topology)
+
+      '''con = core.openflow.getConnection(event.dpid)
+      msg = of.ofp_flow_mod()
+      match = of.ofp_match()
+      msg.match.dl_type = 0x800
+      msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
+      con.send(msg)
+
+      msg = of.ofp_flow_mod()
+      msg.priority = 42
+      #msg.match.dl_type = 0x800
+      # msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
+      # con.send(msg)'''
+
+  def ecmp_path(self, switch_origin, switch_destination):
+    return self.ecmp_util.get_path(switch_origin, switch_destination)
 
   def log_topology(self):
     log.info("The resultant topology after the discovery is: ")
     for switch, adjacents in self.topology.items():
         log.info('switch: ' + str(switch) + ' have this adjacents: ' + str(list(adjacents)))
+
+
+  def write_on_tables(self, path, source_mac_address, destination_mac_address):
+    for i in range(0, len(path) - 1):
+      dpid_switch = path[i][0]
+      next_hop = path[i+1][1]
+      switch_controller = self.get_switch_by_dpid(dpid_switch)
+      switch_controller.write_on_table((source_mac_address, destination_mac_address), next_hop)
+
+  def get_switch_by_dpid(self, dpid):
+      for switch in self.switches:
+        if dpid == switch.get_dpid():
+            return switch
+
+      log.info("Exception: Switch not founded. Everything is broken")
+
+
+  '''def add_host_by_switch(self, macEntry):
+    switch = macEntry.dpid
+    port = macEntry.inport
+    mac_adress = macEntry.my_y_acaddr
+    if switch in self.hosts_bswitch:
+        self.hosts_by_switch[switch].add((mac_adress, port))
+    else:
+        self.hosts_by_switch[switch] = set()
+        self.hosts_by_switch[switch].add((mac_adress, port))
+
+    self.refresh_paths()
+
+  def refresh_paths(self):
+      pass'''
+
 
 def launch():
   # Inicializando el modulo openflow_discovery
@@ -62,9 +118,5 @@ def launch():
 
   # Registrando el Controller en pox.core para que sea ejecutado
   core.registerNew(Controller)
-
-  """
-  Corriendo Spanning Tree Protocol y el modulo l2_learning.
-  No queremos correrlos para la resolucion del TP.
-  Aqui lo hacemos a modo de ejemplo
-  """
+  #pox.openflow.spanning_tree.launch()
+  #pox.forwarding.l2_learning.launch()
