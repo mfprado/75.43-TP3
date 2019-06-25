@@ -13,7 +13,7 @@ class Firewall:
         core.openflow.addListenerByName("FlowStatsReceived",
                                         self.handle_flow_stats)
         self.stats = {}
-        Timer(TIMER_INTERVAL, Firewall.take_statistics,recurring=True)
+        Timer(TIMER_INTERVAL, Firewall.take_statistics, recurring=True)
         Timer(UNLOCK_INTERVAL, self.unlock_all, recurring=True)
         self.locked_ips = set()
         self.log = log
@@ -34,6 +34,7 @@ class Firewall:
                     self.stats[f.match.dst_ip] += 1
                 if self.stats[f.match.dst_ip] > MAX_UDP_PACKETS:
                     self.lock(f.match.dst_ip)
+        self.stats = {}
 
     def lock(self, dst_ip):
         self.log.info("Blocking %s", dst_ip)
