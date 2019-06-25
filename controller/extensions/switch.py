@@ -54,6 +54,13 @@ class SwitchController:
       self.forward(next_hop, event)
       log.info("---------------------FINISHED --------------------------")
 
+  def _handle_ConnectionDown(self, event):
+      log.info("Switch %s going DOWN", self.dpid)
+      # del self.controller.switchDown(self.connection.dpid)
+      self.controller.delete_switch(self.dpid)
+
+
+
   def get_next_hop(self, packet):
     log.info(self.flow_table)
     src = packet.src

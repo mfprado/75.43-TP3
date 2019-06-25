@@ -78,6 +78,19 @@ class Controller:
       self.log_topology()
       self.has_updated_ecmp = False
 
+  def delete_switch(self, switch_dpid):
+      adjacencys = [edge[0] for edge in self.topology[switch_dpid]]
+      for adjacency in adjacencys:
+          edges_to_clean = self.topology[adjacency]
+          cleaned_egdes = set([edge for edge in edges_to_clean if switch_dpid not in edge])
+          self.topology[adjacency] = cleaned_egdes
+      del self.topology[switch_dpid]
+      #for k,v in self.topology.items():
+      #  if switch_dpid == v[0]:
+      #       self.topology[k].remove(v)
+      self.has_updated_ecmp = False
+      self.clean_switches_table()
+
   def ecmp_path(self, switch_origin, switch_destination):
     if not self.has_updated_ecmp:
         log.info("Updating topology")
