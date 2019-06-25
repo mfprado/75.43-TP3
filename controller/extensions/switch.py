@@ -26,20 +26,13 @@ class SwitchController:
       """
       packet = event.parsed
 
-      log.info("---------------------PACKET ARRIVED--------------------------")
-      log.info("Packet arrived to switch %s from %s to %s", self.dpid, packet.src, packet.dst)
-      log.info("PacketPacket is from type %s", ethernet.getNameForType(packet.type))
-
       self.controller.host_tracker._handle_openflow_PacketIn(event)
-      log.info("Packet sent to host tracker")
 
       if ethernet.getNameForType(packet.type) == IPV6_PACKET:
           self.drop(event)
           return
 
-
       next_hop = self.get_next_hop(packet)
-
 
       if not next_hop:
           self.search_for_minimum_path(event)
@@ -52,7 +45,6 @@ class SwitchController:
       log.info("Founded entry in switch table.")
 
       self.forward(next_hop, event)
-      log.info("---------------------FINISHED --------------------------")
 
   def _handle_ConnectionDown(self, event):
       log.info("Switch %s going DOWN", self.dpid)
