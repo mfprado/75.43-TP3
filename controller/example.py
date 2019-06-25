@@ -9,6 +9,7 @@ from pox.lib.addresses import EthAddr, IPAddr
 from pox.host_tracker.host_tracker import host_tracker
 from extensions.ecmp_utils import ECMPUtil
 import datetime as dt
+from extensions.firewall import Firewall
 
 
 log = core.getLogger()
@@ -132,3 +133,4 @@ def launch():
 
   # Registrando el Controller en pox.core para que sea ejecutado
   core.registerNew(Controller)
+  # core.registerNew(Firewall)

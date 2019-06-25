@@ -7,9 +7,10 @@ TIMER_INTERVAL = 2
 UNLOCK_INTERVAL = 10
 MAX_UDP_PACKETS = 50
 
+log = core.getLogger()
 
 class Firewall:
-    def __init__(self, log):
+    def __init__(self):
         core.openflow.addListenerByName("FlowStatsReceived",
                                         self.handle_flow_stats)
         Timer(TIMER_INTERVAL, Firewall.take_statistics, recurring=True)
