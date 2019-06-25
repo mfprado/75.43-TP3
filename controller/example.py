@@ -38,17 +38,19 @@ class Controller:
     log.info('Controller initialized')
 
   def _handle_ConnectionUp(self, event):
-    """
-    Esta funcion es llamada cada vez que un nuevo switch establece conexion
-    Se encarga de crear un nuevo switch controller para manejar los eventos de cada switch
-    """
-    log.info("Switch %s has come up.", dpid_to_str(event.dpid))
-    if (event.connection not in self.connections):
-      self.connections.add(event.connection)
-      self.topology[event.dpid] = set()
+      """
+      Esta funcion es llamada cada vez que un nuevo switch establece conexion
+      Se encarga de crear un nuevo switch controller para manejar los eventos de cada switch
+      """
+      if (event.dpid not in self.connections):
+          log.info("Switch %s has come up.", dpid_to_str(event.dpid))
+          self.connections.add(event.dpid)
+          self.topology[event.dpid] = set()
+          sw = SwitchController(event.dpid, event.connection, self)
+          self.switches.append(sw)
+          self.has_updated_ecmp = False
+          self.clean_switches_table()
 
-      sw = SwitchController(event.dpid, event.connection, self)
-      self.switches.append(sw)
 
   def _handle_LinkEvent(self, event):
       """
@@ -79,15 +81,13 @@ class Controller:
       self.has_updated_ecmp = False
 
   def delete_switch(self, switch_dpid):
+      self.connections.remove(switch_dpid)
       adjacencys = [edge[0] for edge in self.topology[switch_dpid]]
       for adjacency in adjacencys:
           edges_to_clean = self.topology[adjacency]
           cleaned_egdes = set([edge for edge in edges_to_clean if switch_dpid not in edge])
           self.topology[adjacency] = cleaned_egdes
       del self.topology[switch_dpid]
-      #for k,v in self.topology.items():
-      #  if switch_dpid == v[0]:
-      #       self.topology[k].remove(v)
       self.has_updated_ecmp = False
       self.clean_switches_table()
 
