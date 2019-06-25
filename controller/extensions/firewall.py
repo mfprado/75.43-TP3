@@ -25,34 +25,34 @@ class Firewall:
     def handle_flow_stats(self, event):
         stats = {}
         for f in event.stats:
-            if f.match.dst_ip in self.locked_ips:
+            if f.match.nw_dst in self.locked_ips:
                 continue
             if f.match.nw_proto == pkt.ipv4.UDP_PROTOCOL:
-                if f.match.dst_ip not in stats:
-                    stats[f.match.dst_ip] = 1
+                if f.match.nw_dst not in stats:
+                    stats[f.match.nw_dst] = 1
                 else:
-                    stats[f.match.dst_ip] += 1
-                if stats[f.match.dst_ip] > MAX_UDP_PACKETS:
-                    self.lock(f.match.dst_ip)
+                    stats[f.match.nw_dst] += 1
+                if stats[f.match.nw_dst] > MAX_UDP_PACKETS:
+                    self.lock(f.match.nw_dst)
 
-    def lock(self, dst_ip):
-        self.log.info("Blocking %s", dst_ip)
+    def lock(self, nw_dst):
+        self.log.info("Blocking %s", nw_dst)
         msg = of.ofp_flow_mod()
         msg.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
         msg.priority = of.OFP_DEFAULT_PRIORITY + 1
-        msg.match.nw_dst = dst_ip
-        self.locked_ips.update([dst_ip])
+        msg.match.nw_dst = nw_dst
+        self.locked_ips.update([nw_dst])
         for connection in core.openflow.connections:
             connection.send(msg)
 
     def unlock_all(self):
-        for dst_ip in self.locked_ips:
+        for nw_dst in self.locked_ips:
             msg = of.ofp_flow_mod()
             msg.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
             msg.priority = of.OFP_DEFAULT_PRIORITY + 2
-            msg.match.nw_dst = dst_ip
+            msg.match.nw_dst = nw_dst
             msg.command = of.OFPFC_DELETE
             for connection in core.openflow.connections:
                 connection.send(msg)
-            self.locked_ips.remove(dst_ip)
+            self.locked_ips.remove(nw_dst)
 
