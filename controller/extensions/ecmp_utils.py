@@ -1,3 +1,5 @@
+import random
+import time
 
 
 class ECMPUtil():
@@ -40,6 +42,7 @@ class ECMPUtil():
         # just the local on each step because we want the optimal length also,
         # and dijkstra (global cost) cant guarantee us that
         neighbors = [(link, use_counts[(start, link)]) for link in links[start]]
+        random.shuffle(neighbors)
         neighbors = [n[0] for n in sorted(neighbors, key=lambda x: x[1])]
         for neigh in neighbors:
             # Tipical if for BFS to avoid loops
@@ -61,9 +64,11 @@ class ECMPUtil():
         :param use_counts: the use counts dictionary for each edge tuple
         :return: a list as a path, containing the start and end
         """
+        random.seed(time.time())
         parents = {}
         visited = set()
         neighbors = [(link, use_counts[(start, link)]) for link in links[start]]
+        random.shuffle(neighbors)
         neighbors = [n[0] for n in sorted(neighbors, key=lambda x: x[1])]
         visited.update([start])
         for neigh in neighbors:
